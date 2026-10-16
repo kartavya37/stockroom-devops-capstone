@@ -1,0 +1,24 @@
+{{- if .Values.serviceMonitor.enabled }}
+# The ServiceMonitor tells the Prometheus Operator to read the /metrics path.
+# This object needs the Prometheus Operator CRDs in the cluster.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "stockroom.fullname" . }}-backend
+  labels:
+    {{- include "stockroom.labels" . | nindent 4 }}
+    {{- with .Values.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "stockroom.selectorLabels" (dict "root" . "component" "backend") | nindent 6 }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: http
+      path: {{ .Values.serviceMonitor.path }}
+      interval: {{ .Values.serviceMonitor.interval }}
+{{- end }}

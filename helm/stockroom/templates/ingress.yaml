@@ -1,0 +1,35 @@
+{{- if .Values.ingress.enabled }}
+# The Ingress sends / to the frontend and /api to the backend.
+# An Ingress object is only configuration. An Ingress Controller does the work.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "stockroom.fullname" . }}
+  labels:
+    {{- include "stockroom.labels" . | nindent 4 }}
+  annotations:
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          # The longer path comes first.
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "stockroom.fullname" . }}-backend
+                port:
+                  number: {{ .Values.backend.service.port }}
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "stockroom.fullname" . }}-frontend
+                port:
+                  number: {{ .Values.frontend.service.port }}
+{{- end }}
