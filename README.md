@@ -6,7 +6,7 @@
 | Roll number | 24bcs10343 |
 | Demo video | [demo/video.mp4](demo/video.mp4) |
 | Slides | [demo/slides.pptx](demo/slides.pptx) · [demo/slides.pdf](demo/slides.pdf) |
-| Green pipeline run | [GitHub Actions run](../../actions) |
+| Green pipeline run | [CI/CD run #1](https://github.com/kartavya37/stockroom-devops-capstone/actions/runs/38919883026) |
 
 ## Project description and purpose
 
