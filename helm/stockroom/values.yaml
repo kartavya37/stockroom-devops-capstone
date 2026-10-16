@@ -9,7 +9,7 @@ namespace: stockroom
 backend:
   image:
     repository: ghcr.io/kartavya37/stockroom-backend
-    tag: "f9d505911f258f920fc50b8808e96395cda92157"
+    tag: "8342b9b346b26a4b9610d09933440b00dcd6e3e1"
     pullPolicy: IfNotPresent
   replicaCount: 2
   containerPort: 8000
@@ -31,7 +31,7 @@ backend:
 frontend:
   image:
     repository: ghcr.io/kartavya37/stockroom-frontend
-    tag: "f9d505911f258f920fc50b8808e96395cda92157"
+    tag: "8342b9b346b26a4b9610d09933440b00dcd6e3e1"
     pullPolicy: IfNotPresent
   replicaCount: 2
   containerPort: 8080
