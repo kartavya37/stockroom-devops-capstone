@@ -14,7 +14,9 @@ metadata:
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
-    - host: {{ .Values.ingress.host }}
+    - {{- with .Values.ingress.host }}
+      host: {{ . }}
+      {{- end }}
       http:
         paths:
           # The longer path comes first.

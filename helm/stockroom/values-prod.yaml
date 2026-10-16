@@ -29,6 +29,9 @@ hpa:
 serviceMonitor:
   enabled: true
 
+grafanaDashboard:
+  enabled: true
+
 postgres:
   # Change this value to false and use Amazon RDS for real production.
   enabled: true

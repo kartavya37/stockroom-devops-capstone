@@ -28,6 +28,22 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
+      {{- if .Values.postgres.enabled }}
+      # The backend runs the migration at the start. This init container keeps
+      # the backend waiting until PostgreSQL accepts connections.
+      initContainers:
+        - name: wait-for-postgres
+          image: "{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
+          command:
+            - sh
+            - -c
+            - until pg_isready -h {{ include "stockroom.fullname" . }}-postgres -p {{ .Values.postgres.service.port }}; do echo "waiting for postgres"; sleep 2; done
+          securityContext:
+            runAsUser: 70
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+      {{- end }}
       containers:
         - name: backend
           image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"

@@ -1,16 +1,15 @@
-# The development values. Use this file on Minikube, Kind or Docker Desktop.
+# The values for a local cluster (Minikube). Argo CD also uses this file.
 #   helm upgrade --install stockroom ./helm/stockroom \
 #     -n stockroom --create-namespace -f helm/stockroom/values-dev.yaml
+#
+# This file does not set an image tag. The tag comes from values.yaml, where
+# the pipeline writes the commit SHA.
 
 backend:
   replicaCount: 2
-  image:
-    tag: latest
 
 frontend:
   replicaCount: 2
-  image:
-    tag: latest
 
 ingress:
   enabled: true
@@ -24,6 +23,9 @@ hpa:
   targetCPUUtilizationPercentage: 50
 
 serviceMonitor:
+  enabled: true
+
+grafanaDashboard:
   enabled: true
 
 postgres:
