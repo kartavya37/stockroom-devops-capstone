@@ -1,191 +1,111 @@
-# The submission guide
+# Grading map
 
-This document maps each grading criterion to the file in this repository and
-to the screenshot that you must make.
+Every line of `GRADING.md`, the file that proves it, and the screenshot in
+`screenshots/`.
 
-The repository is `https://github.com/kartavya37/<repository>`.
+Student: Kartavya Panchal (24bcs10343) · Repository: `kartavya37/stockroom-devops-capstone`
 
----
+## M1 — Application (10)
 
-## M1 — Application (10 points)
-
-| Criterion | The proof | State |
-|---|---|---|
-| The backend answers at `/health` | `backend/app/main.py` | Complete |
-| Four or more REST endpoints | Six item endpoints | Complete |
-| PostgreSQL with an Alembic migration | `backend/alembic/versions/0001_create_items.py` | Complete |
-| The frontend makes API calls | `frontend/src/main.jsx` | Complete |
-| A responsive and usable screen | `frontend/src/styles.css` | Complete |
-
-**Screenshot 1:** the browser at `http://localhost:3000` with items in the table.
-
----
-
-## M2 — Tests (10 points)
-
-| Criterion | The proof | State |
-|---|---|---|
-| `pytest` operates | 12 tests pass | Complete |
-| Five tests on three endpoints | 12 tests on 8 endpoints | Complete |
-| A test database, not the production database | `backend/tests/conftest.py` | Complete |
-| `pytest.ini` is present | `backend/pytest.ini` | Complete |
-
-**Screenshot 2:** the terminal with `pytest -v` and 12 green lines.
-
-```bash
-cd backend && pytest -v
-```
-
----
-
-## M3 — Git and GitHub (5 points)
-
-| Criterion | Your action |
+| Criterion | Evidence |
 |---|---|
-| A public repository | Make the repository on GitHub. |
-| Ten or more clear commit messages | The local history has 14 commits. |
-| A correct `.gitignore` | Complete. See `.gitignore`. |
+| Backend responds to `/health` | `backend/app/main.py`, `test_health_returns_healthy` |
+| ≥ 4 REST endpoints (GET, POST, PUT, DELETE) | 6 item endpoints in `backend/app/main.py` |
+| PostgreSQL table managed by Alembic | `backend/alembic/versions/0001_create_items.py` |
+| Frontend renders and calls the API | `frontend/src/main.jsx` → `/api/items`, `/api/items/stats` |
+| Responsive, usable UI | `frontend/src/styles.css` (breakpoints at 1000 px and 720 px) |
+| Screenshot | `01-app-compose.png` |
 
-**Screenshot 3:** the commit list on GitHub.
+## M2 — Testing (10)
 
----
+| Criterion | Evidence |
+|---|---|
+| `pytest` runs without errors | 12 passed |
+| ≥ 5 tests over ≥ 3 endpoints | 12 tests over 8 endpoints, `backend/tests/test_api.py` |
+| Test DB, not production | in-memory SQLite, `backend/tests/conftest.py` |
+| `pytest.ini` / `conftest.py` | both present |
+| Screenshot | `02-pytest.png` |
 
-## M4 — Docker (10 points)
+## M3 — Git and GitHub (5)
 
-| Criterion | The proof | State |
-|---|---|---|
-| The backend image builds | `backend/Dockerfile` | Complete |
-| A multi-stage frontend build | `frontend/Dockerfile` | Complete |
-| Non-root users | UID 10001 and UID 101 | Complete |
-| Compose starts three services | `docker-compose.yml` | Complete |
+| Criterion | Evidence |
+|---|---|
+| Public repository | repository URL in the form |
+| Meaningful commit messages | conventional commits, 30+ |
+| `.gitignore` covers `.env`, `__pycache__`, `node_modules`, `.venv` | `.gitignore` |
+| Screenshot | `05-commits.png` |
 
-**Screenshot 4:** the terminal with `docker compose up --build`.
-**Screenshot 5:** the output of these two commands:
+## M4 — Docker (10)
 
-```bash
-docker compose exec backend id
-docker compose exec frontend id
-```
+| Criterion | Evidence |
+|---|---|
+| `backend/Dockerfile` builds | `backend/Dockerfile` |
+| Multi-stage frontend (Node → Nginx) | `frontend/Dockerfile` |
+| Non-root users | backend UID 10001, frontend UID 101 |
+| `docker compose up --build` starts 3 services | `docker-compose.yml` |
+| Screenshots | `03-compose-up.png`, `01-app-compose.png` |
 
----
+## M5 — CI/CD (15)
 
-## M5 — The pipeline (15 points)
+| Criterion | Evidence |
+|---|---|
+| Workflow file | `.github/workflows/ci-cd.yml` |
+| Triggers on push to `main` | `on.push.branches: [main]` |
+| pytest fails the build | job 1, step "Run pytest" |
+| Frontend built | job 1, step "Build frontend" |
+| Both images built | job 2 |
+| Pushed to GHCR | job 2, step "Push images" |
+| SHA tags, not `latest` | `$GITHUB_SHA`; no `latest` tag is pushed |
+| Screenshots | `06-actions.png`, `08-ghcr.png` |
 
-| Criterion | The proof | State |
-|---|---|---|
-| A workflow file | `.github/workflows/ci-cd.yml` | Complete |
-| A trigger on `main` | The `on.push.branches` key | Complete |
-| pytest stops the build | The `test` job | Complete |
-| The frontend build | The `test` job | Complete |
-| Two Docker images | The `build` job | Complete |
-| A push to GHCR | The `build` job | Complete |
-| The commit SHA as the tag | `${{ github.sha }}` | Complete |
+## M6 — Trivy (5)
 
-**Screenshot 6:** the green pipeline run on GitHub.
-**Screenshot 7:** the GHCR package page with the SHA tag.
+| Criterion | Evidence |
+|---|---|
+| Scan of both images in CI | job 2, two Trivy steps |
+| Fails on HIGH / CRITICAL | `--exit-code 1 --severity HIGH,CRITICAL` |
+| Explanation of a CVE | README "Trivy result", `docs/SECURITY.md` §2 |
+| Screenshot | `07-trivy.png` |
 
----
+## M7 — Terraform (15)
 
-## M6 — Trivy (5 points)
+| Criterion | Evidence |
+|---|---|
+| Valid HCL in `terraform/` | `terraform validate` passes |
+| `terraform init` | screenshot in the video |
+| `terraform plan` with no errors | `14-terraform-plan.png` |
+| VPC with ≥ 2 public subnets | `module.vpc` in `terraform/main.tf` |
+| EKS with ≥ 1 node group | `module.eks`, node group `workers` |
+| `terraform destroy` clean | `16-terraform-destroy.png` |
+| `terraform.tfvars.example`, no credentials | `terraform/terraform.tfvars.example` |
+| AWS proof | `15-aws.png` |
 
-| Criterion | The proof | State |
-|---|---|---|
-| A scan of both images | Two Trivy steps | Complete |
-| The build stops at HIGH or CRITICAL | `exit-code: "1"` | Complete |
-| An explanation of the result | `docs/SECURITY.md` section 2 | Complete |
+## M8 — Kubernetes + Helm (15)
 
-**Screenshot 8:** the Trivy step output in the pipeline log.
+| Criterion | Evidence |
+|---|---|
+| `k8s/namespace.yaml` | present |
+| Chart with `Chart.yaml`, `values.yaml`, templates | `helm/stockroom/` (`helm lint` passes) |
+| `helm upgrade --install` without errors | `09-helm-kubectl.png` |
+| Backend and frontend ≥ 2 replicas | frontend `replicaCount: 2`, backend HPA `minReplicas: 2` |
+| ClusterIP services | `stockroom-backend`, `stockroom-frontend`, `stockroom-postgres` |
+| Ingress `/` → frontend, `/api` → backend | `templates/ingress.yaml` |
+| All Pods `Running` | `09-helm-kubectl.png` |
+| App through the Ingress | `10-ingress.png` |
 
----
+## M9 — Observability (10)
 
-## M7 — Terraform (15 points)
+| Criterion | Evidence |
+|---|---|
+| `/metrics` in Prometheus format | `04-metrics.png`, `test_metrics_endpoint_is_prometheus_format` |
+| Prometheus scrapes the app | `templates/servicemonitor.yaml`, `12-prometheus.png` |
+| Grafana accessible | `monitoring/prometheus-values.yaml` |
+| Panel with live app metrics | `templates/grafana-dashboard.yaml`, `13-grafana.png` |
 
-| Criterion | The proof | State |
-|---|---|---|
-| Valid HCL files | `terraform/*.tf` | Complete. `terraform validate` passes. |
-| `terraform init` | — | Complete on this machine |
-| A plan with no error | — | **Your action.** This needs AWS credentials. |
-| A VPC with two public subnets | `terraform/main.tf` | Complete |
-| An EKS cluster with a node group | `terraform/main.tf` | Complete |
-| A clean `terraform destroy` | — | **Your action** |
-| A `terraform.tfvars.example` file | `terraform/terraform.tfvars.example` | Complete |
+## M10 — Presentation + documentation (5)
 
-**Screenshot 9:** the `terraform plan` output.
-**Screenshot 10:** the AWS console with the VPC and the EKS cluster.
-**Screenshot 11:** the `terraform destroy` completion.
-
----
-
-## M8 — Kubernetes and Helm (15 points)
-
-| Criterion | The proof | State |
-|---|---|---|
-| `k8s/namespace.yaml` | Complete | Complete |
-| A chart with templates | `helm/stockroom/` | Complete. `helm lint` passes. |
-| `helm upgrade --install` with no error | — | **Your action** |
-| Two replicas for each deployment | `values.yaml` | Complete |
-| ClusterIP Services | Four Services | Complete |
-| An Ingress for `/` and `/api` | `templates/ingress.yaml` | Complete |
-| Each Pod is `Running` | — | **Your action** |
-
-**Screenshot 12:** `kubectl get pods -n stockroom`.
-**Screenshot 13:** `kubectl get svc -n stockroom`.
-**Screenshot 14:** `helm list -n stockroom`.
-**Screenshot 15:** the browser with the Ingress address.
-
----
-
-## M9 — The monitoring (10 points)
-
-| Criterion | The proof | State |
-|---|---|---|
-| The `/metrics` endpoint | `app/main.py`, 118 metric lines | Complete |
-| Prometheus reads the application | `templates/servicemonitor.yaml` | Complete |
-| Grafana operates | `monitoring/prometheus-values.yaml` | Complete |
-| One panel with live data | `monitoring/grafana-dashboard.json` | Complete |
-
-**Screenshot 16:** the `curl .../metrics` output.
-**Screenshot 17:** the Prometheus Targets page with the state `UP`.
-**Screenshot 18:** the Grafana panel with data.
-
----
-
-## M10 — The presentation (5 points)
-
-| Criterion | The proof | State |
-|---|---|---|
-| A `README.md` file | `README.md`, 308 lines | Complete |
-| A live demonstration | — | **Your action** |
-
-The order of the demonstration is in section "The demonstration" below.
-
----
-
-## The demonstration order
-
-Make a small change. Then show the full chain.
-
-1. Open the application. Add an item.
-2. Open `/docs`. Make a `GET`, a `POST` and a `DELETE` request.
-3. Show the `items` table in PostgreSQL.
-4. Change one line in the frontend. Commit the change.
-5. Push the commit. Show the pipeline in GitHub Actions.
-6. Show the two images in GHCR with the new SHA tag.
-7. Show the Trivy step in the log.
-8. Show the Terraform code and the AWS console.
-9. Show `kubectl get pods` and `helm list`.
-10. Open the application through the Ingress address.
-11. Start the load script. Show `kubectl get hpa --watch`.
-12. Show the Grafana panel. The request rate increases.
-13. Apply a broken manifest. Find the error with `kubectl describe`.
-
-## The database command for step 3
-
-```bash
-# Local
-docker compose exec postgres psql -U stockroom -d stockroom -c 'SELECT * FROM items;'
-
-# In the cluster
-kubectl exec -n stockroom deploy/stockroom-postgres -- \
-  psql -U stockroom -d stockroom -c 'SELECT * FROM items;'
-```
+| Criterion | Evidence |
+|---|---|
+| `README.md` with full technical docs | `README.md` |
+| Video covering the walkthrough | `demo/video.mp4` |
+| Slide deck (≥ 8 slides) | `demo/slides.pptx`, `demo/slides.pdf` |

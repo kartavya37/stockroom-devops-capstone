@@ -32,6 +32,6 @@ spec:
       containers:
         - name: backend
           # This tag does not exist in the registry.
-          image: ghcr.io/kartavya37/stockroom-devops-capstone-backend:v9.9.9-does-not-exist
+          image: ghcr.io/kartavya37/stockroom-backend:v9.9.9-does-not-exist
           ports:
             - containerPort: 8000

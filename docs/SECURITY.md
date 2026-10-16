@@ -11,7 +11,7 @@ The pipeline makes a check of two images:
 | Image | Base | Content |
 |---|---|---|
 | backend | `python:3.12-slim` | Debian packages and the Python packages from `requirements.txt` |
-| frontend | `nginx:1.27-alpine` | Alpine packages and the static files |
+| frontend | `nginx:1.30-alpine` | Alpine packages and the static files |
 
 The configuration in the workflow:
 
@@ -27,26 +27,70 @@ exit-code: "1"
 - `exit-code: 1` — a finding stops the pipeline. No image goes to the
   registry.
 
-## 2. The explanation for the grading (module M6)
+## 2. Our scan results (module M6)
 
-> Trivy examined both container images. It compared each operating system
-> package and each Python dependency against the vulnerability databases. The
-> scan found no HIGH or CRITICAL vulnerability with an available correction,
-> therefore the pipeline continued and pushed the images. A clean result does
-> not prove that the application is secure. It proves only that the known
-> package vulnerabilities are absent.
+All numbers come from Trivy 0.75.0 on 16 October 2026, with the same flags
+as the pipeline: `--severity HIGH,CRITICAL --ignore-unfixed`.
 
-If the scan reports a CVE, replace the text above with this structure:
+### The first scan: both images failed
 
-1. The identifier of the CVE, for example `CVE-2024-12345`.
-2. The package and the version, for example `libxml2 2.9.14`.
-3. The class, for example HIGH.
-4. The correction, for example "the new base image contains version 2.9.15".
+| Image | Base | HIGH | CRITICAL | Total |
+|---|---|---|---|---|
+| backend | `python:3.12-slim`, Debian 13.6 | 17 | 3 | 20 |
+| frontend | `nginx:1.27-alpine`, Alpine 3.21.3 | 41 | 2 | 43 |
 
-Find the details:
+The backend findings in detail:
+
+| CVE | Class | Package | Installed | Fixed in | Layer |
+|---|---|---|---|---|---|
+| CVE-2026-13221 | CRITICAL | perl-base | 5.40.1-6 | 5.40.1-6+deb13u1 | Debian |
+| CVE-2026-42496 | CRITICAL | perl-base | 5.40.1-6 | 5.40.1-6+deb13u1 | Debian |
+| CVE-2026-8376 | CRITICAL | perl-base | 5.40.1-6 | 5.40.1-6+deb13u1 | Debian |
+| CVE-2025-62727 | HIGH | starlette | 0.41.3 | 0.49.1 | Python |
+| CVE-2026-48818 | HIGH | starlette | 0.41.3 | 1.1.0 | Python |
+| CVE-2026-54283 | HIGH | starlette | 0.41.3 | 1.3.1 | Python |
+| 14 more | HIGH | gzip, libpcre2, libsqlite3, openssl and others | | | Debian |
+
+### The explanation of one CVE
+
+> **CVE-2026-13221 (CRITICAL) in `perl-base` 5.40.1-6.** The slim Python
+> base image contains `perl-base`, because the Debian package tools need it.
+> This build processes very large regular expressions incorrectly. StockRoom
+> never runs Perl, so a request to the API cannot reach the flaw. But the
+> package is in the image, and Trivy reports what the image contains, not
+> what the application calls. Debian already published the fixed build
+> 5.40.1-6+deb13u1, so one `apt-get upgrade` line in the Dockerfile removed
+> this CVE and the 16 other Debian findings.
+
+A second example that is useful for the discussion: **CVE-2026-54283 (HIGH)**
+in Starlette 0.41.3. `request.form()` ignores its size limits for
+url-encoded bodies. StockRoom accepts only JSON, so it never calls
+`request.form()`. We upgraded anyway, because a future form endpoint would
+be exposed at once.
+
+### The fixes
+
+| Fix | Effect |
+|---|---|
+| `apt-get upgrade` in `backend/Dockerfile` | 17 Debian findings removed |
+| FastAPI 0.115.6 → 0.143.2, prometheus-fastapi-instrumentator 7.0.0 → 8.1.0 (Starlette 1.8.0) | 3 Python findings removed. The old instrumentator kept Starlette below 1.0. |
+| `nginx:1.27-alpine` → `nginx:1.30-alpine` and `apk upgrade` | 43 Alpine findings removed |
+
+### The second scan: both images are clean
+
+| Image | HIGH | CRITICAL | Exit code |
+|---|---|---|---|
+| backend | 0 | 0 | 0 |
+| frontend | 0 | 0 | 0 |
+
+A clean result does not prove that the application is secure. It proves only
+that the image contains no known package vulnerability that has a fix.
+
+Reproduce a scan:
 
 ```bash
-trivy image --severity HIGH,CRITICAL ghcr.io/kartavya37/<repo>-backend:<sha>
+docker build -t stockroom-backend:scan ./backend
+trivy image --severity HIGH,CRITICAL --ignore-unfixed stockroom-backend:scan
 ```
 
 ## 3. The layers of security
@@ -75,7 +119,32 @@ This project uses the container scan layer.
 | No secret in Git | `.gitignore` and `terraform/.gitignore` |
 | The automatic pipeline token | `.github/workflows/ci-cd.yml` |
 
-## 5. The known weak points of this project
+## 5. A reliability finding: the migration race
+
+This is not a CVE, but we found it with a test, and it affects the
+availability of the service.
+
+Each backend container runs `alembic upgrade head` at the start. With two
+replicas on an empty database, both containers try to make the table
+`alembic_version` at the same moment. The second one fails:
+
+```text
+psycopg.errors.UniqueViolation: duplicate key value violates unique constraint "pg_type_typname_nsp_index"
+DETAIL:  Key (typname, typnamespace)=(alembic_version, 2200) already exists.
+```
+
+The test: start PostgreSQL, then start two backend containers at the same
+time, five times.
+
+| Image | Crashed containers in 5 runs |
+|---|---|
+| Without the lock | 5 |
+| With `pg_advisory_xact_lock` in `alembic/env.py` | 0 |
+
+The lock is a transaction-level advisory lock. The second container waits
+until the first commits, then finds the migration already applied.
+
+## 6. The known weak points of this project
 
 The grading team gives points for an honest analysis. These points are open:
 
