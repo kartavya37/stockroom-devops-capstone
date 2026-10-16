@@ -1,0 +1,14 @@
+{{- if .Values.grafanaDashboard.enabled }}
+# Grafana loads this dashboard automatically through the sidecar of
+# kube-prometheus-stack. No manual import is necessary.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "stockroom.fullname" . }}-grafana-dashboard
+  labels:
+    {{- include "stockroom.labels" . | nindent 4 }}
+    {{ .Values.grafanaDashboard.label }}: {{ .Values.grafanaDashboard.labelValue | quote }}
+data:
+  stockroom-api.json: |-
+{{ .Files.Get "dashboards/stockroom-api.json" | indent 4 }}
+{{- end }}

@@ -17,6 +17,7 @@ prometheus:
     serviceMonitorSelectorNilUsesHelmValues: false
     podMonitorSelectorNilUsesHelmValues: false
     ruleSelectorNilUsesHelmValues: false
+    serviceMonitorNamespaceSelector: {}
     resources:
       requests:
         cpu: 200m
@@ -24,13 +25,6 @@ prometheus:
       limits:
         cpu: 1000m
         memory: 2Gi
-    storageSpec:
-      volumeClaimTemplate:
-        spec:
-          accessModes: ["ReadWriteOnce"]
-          resources:
-            requests:
-              storage: 10Gi
 
 grafana:
   enabled: true
@@ -39,18 +33,21 @@ grafana:
   service:
     type: ClusterIP
   defaultDashboardsEnabled: true
+  # The sidecar loads the StockRoom dashboard ConfigMap from the Helm chart.
   sidecar:
     dashboards:
       enabled: true
       label: grafana_dashboard
+      labelValue: "1"
       searchNamespace: ALL
   resources:
     requests:
       cpu: 100m
       memory: 256Mi
 
+# The project has no alert rules, so Alertmanager is not necessary.
 alertmanager:
-  enabled: true
+  enabled: false
 
 # The classroom cluster is small. These components are not necessary.
 kubeEtcd:
