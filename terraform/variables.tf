@@ -43,9 +43,9 @@ variable "private_subnet_cidrs" {
 }
 
 variable "kubernetes_version" {
-  description = "The version of the EKS control plane."
+  description = "The version of the EKS control plane. Use a version in standard support: a version in extended support costs six times more per hour."
   type        = string
-  default     = "1.31"
+  default     = "1.36"
 }
 
 variable "node_instance_type" {
