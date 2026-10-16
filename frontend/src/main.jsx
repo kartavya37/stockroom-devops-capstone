@@ -196,7 +196,7 @@ function App() {
         <header className="header">
           <div>
             <h1>Inventory</h1>
-            <p className="header__sub">Stock levels across the warehouse, deployed by Argo CD</p>
+            <p className="header__sub">Live stock levels across the warehouse, deployed by Argo CD</p>
           </div>
           <button className="btn btn--primary" onClick={() => setFormOpen(true)}>Add item</button>
         </header>
