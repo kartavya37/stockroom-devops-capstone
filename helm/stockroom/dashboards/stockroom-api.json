@@ -4,44 +4,85 @@
   "timezone": "browser",
   "refresh": "10s",
   "schemaVersion": 39,
-  "time": { "from": "now-30m", "to": "now" },
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
   "panels": [
     {
       "type": "timeseries",
       "title": "Requests per second",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
       "targets": [
         {
           "expr": "sum(rate(http_requests_total{job=~\".*stockroom.*backend.*\"}[5m])) by (handler)",
           "legendFormat": "{{handler}}"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      }
     },
     {
       "type": "timeseries",
-      "title": "Request duration, 95th percentile",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "title": "Request duration, 95th percentile (all routes)",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=~\".*stockroom.*backend.*\"}[5m])) by (le, handler))",
-          "legendFormat": "{{handler}}"
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_highr_seconds_bucket{job=~\".*stockroom.*backend.*\"}[5m])) by (le))",
+          "legendFormat": "p95"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      }
     },
     {
       "type": "stat",
       "title": "Error rate, 5xx",
-      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 8 },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 8
+      },
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{job=~\".*stockroom.*backend.*\",status=~\"5..\"}[5m]))"
+          "expr": "sum(rate(http_requests_total{job=~\".*stockroom.*backend.*\",status=~\"5..\"}[5m])) or vector(0)"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      }
     },
     {
       "type": "stat",
       "title": "Backend Pods",
-      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 8 },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 8,
+        "y": 8
+      },
       "targets": [
         {
           "expr": "count(up{job=~\".*stockroom.*backend.*\"} == 1)"
@@ -51,7 +92,12 @@
     {
       "type": "timeseries",
       "title": "CPU per Pod",
-      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 8 },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 16,
+        "y": 8
+      },
       "targets": [
         {
           "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"stockroom\",container=\"backend\"}[5m])) by (pod)",
