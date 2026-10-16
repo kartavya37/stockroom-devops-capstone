@@ -1,0 +1,55 @@
+# The full StockRoom stack. One command starts the three services.
+#   docker compose up --build
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: stockroom-postgres
+    environment:
+      POSTGRES_USER: stockroom
+      POSTGRES_PASSWORD: stockroom
+      POSTGRES_DB: stockroom
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stockroom -d stockroom"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - stockroom
+
+  backend:
+    build:
+      context: ./backend
+    container_name: stockroom-backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://stockroom:stockroom@postgres:5432/stockroom
+      APP_NAME: StockRoom
+      APP_VERSION: "1.0.0"
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - stockroom
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: stockroom-frontend
+    ports:
+      - "3000:8080"
+    depends_on:
+      - backend
+    networks:
+      - stockroom
+
+volumes:
+  postgres-data:
+
+networks:
+  stockroom:
+    driver: bridge
