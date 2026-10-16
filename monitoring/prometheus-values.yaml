@@ -1,0 +1,63 @@
+# The values for the kube-prometheus-stack chart.
+# This chart installs Prometheus, Grafana, Alertmanager and the operator.
+#
+#   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+#   helm repo update
+#   helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+#     --namespace monitoring --create-namespace \
+#     -f monitoring/prometheus-values.yaml
+
+fullnameOverride: monitoring
+
+prometheus:
+  prometheusSpec:
+    retention: 6h
+    # An empty selector lets Prometheus read every ServiceMonitor in the
+    # cluster. Without this value, Prometheus reads only its own objects.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+
+grafana:
+  enabled: true
+  # Change this password. Do not use this value in production.
+  adminPassword: stockroom-admin
+  service:
+    type: ClusterIP
+  defaultDashboardsEnabled: true
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      searchNamespace: ALL
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+alertmanager:
+  enabled: true
+
+# The classroom cluster is small. These components are not necessary.
+kubeEtcd:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
