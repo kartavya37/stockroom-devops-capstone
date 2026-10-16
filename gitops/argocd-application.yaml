@@ -1,0 +1,45 @@
+# Argo CD watches the Helm chart in this repository and keeps the cluster
+# equal to Git. The pipeline writes a new image tag into values.yaml; Argo CD
+# sees the commit and rolls out the new Pods. Nobody runs "helm upgrade".
+#
+#   kubectl apply -f gitops/argocd-application.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: stockroom
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/kartavya37/stockroom-devops-capstone.git
+    targetRevision: main
+    path: helm/stockroom
+    helm:
+      releaseName: stockroom
+      valueFiles:
+        - values.yaml
+        - values-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: stockroom
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
+  # The HPA owns the backend replica count, so Argo CD ignores that field.
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: stockroom-backend
+      jsonPointers:
+        - /spec/replicas
