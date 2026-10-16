@@ -1,9 +1,9 @@
-fastapi==0.115.6
-uvicorn[standard]==0.34.0
+fastapi==0.143.2
+uvicorn[standard]==0.54.0
 sqlalchemy==2.0.36
-psycopg[binary]==3.2.3
+psycopg[binary]==3.3.6
 alembic==1.14.0
-pydantic==2.10.4
-prometheus-fastapi-instrumentator==7.0.0
+pydantic==2.12.5
+prometheus-fastapi-instrumentator==8.1.0
 pytest==8.3.4
 httpx==0.28.1
