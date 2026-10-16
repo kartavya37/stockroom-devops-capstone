@@ -9,7 +9,7 @@ namespace: stockroom
 backend:
   image:
     repository: ghcr.io/kartavya37/stockroom-backend
-    tag: "set-by-pipeline"
+    tag: "38c21688ed71f8223fb20195dcbbbc8a30848932"
     pullPolicy: IfNotPresent
   replicaCount: 2
   containerPort: 8000
@@ -31,7 +31,7 @@ backend:
 frontend:
   image:
     repository: ghcr.io/kartavya37/stockroom-frontend
-    tag: "set-by-pipeline"
+    tag: "38c21688ed71f8223fb20195dcbbbc8a30848932"
     pullPolicy: IfNotPresent
   replicaCount: 2
   containerPort: 8080
