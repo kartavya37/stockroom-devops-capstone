@@ -2,12 +2,10 @@
 # The AWS infrastructure for StockRoom.
 #
 #   VPC
-#    ├── 2 public subnets   (the load balancer and the NAT gateway)
-#    ├── 2 private subnets  (the EKS worker nodes)
-#    ├── 1 internet gateway
-#    └── 1 NAT gateway
+#    ├── 2 public subnets in 2 availability zones
+#    └── 1 internet gateway
 #   EKS cluster
-#    └── 1 managed node group
+#    └── 1 managed node group in the public subnets
 # ---------------------------------------------------------------------------
 
 data "aws_availability_zones" "available" {
@@ -29,24 +27,19 @@ module "vpc" {
   name = "${local.name}-vpc"
   cidr = var.vpc_cidr
 
-  azs             = local.azs
-  public_subnets  = var.public_subnet_cidrs
-  private_subnets = var.private_subnet_cidrs
+  azs            = local.azs
+  public_subnets = var.public_subnet_cidrs
 
-  # One NAT gateway keeps the cost low. Production uses one gateway per zone.
-  enable_nat_gateway   = true
-  single_nat_gateway   = true
-  enable_dns_hostnames = true
-  enable_dns_support   = true
+  # The nodes get a public IP address, so they reach the EKS API and GHCR
+  # through the internet gateway. No NAT gateway is necessary.
+  map_public_ip_on_launch = true
+  enable_nat_gateway      = false
+  enable_dns_hostnames    = true
+  enable_dns_support      = true
 
-  # These tags let the AWS load balancer controller find the subnets.
+  # This tag lets a Kubernetes load balancer find the subnets.
   public_subnet_tags = {
     "kubernetes.io/role/elb"                  = "1"
-    "kubernetes.io/cluster/${local.name}-eks" = "shared"
-  }
-
-  private_subnet_tags = {
-    "kubernetes.io/role/internal-elb"         = "1"
     "kubernetes.io/cluster/${local.name}-eks" = "shared"
   }
 
@@ -64,7 +57,7 @@ module "eks" {
   cluster_version = var.kubernetes_version
 
   vpc_id     = module.vpc.vpc_id
-  subnet_ids = module.vpc.private_subnets
+  subnet_ids = module.vpc.public_subnets
 
   # The classroom demonstration needs a public API endpoint.
   cluster_endpoint_public_access  = true

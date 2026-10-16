@@ -36,12 +36,6 @@ variable "public_subnet_cidrs" {
   default     = ["10.0.1.0/24", "10.0.2.0/24"]
 }
 
-variable "private_subnet_cidrs" {
-  description = "The address ranges of the private subnets. The list has two items."
-  type        = list(string)
-  default     = ["10.0.11.0/24", "10.0.12.0/24"]
-}
-
 variable "kubernetes_version" {
   description = "The version of the EKS control plane. Use a version in standard support: a version in extended support costs six times more per hour."
   type        = string

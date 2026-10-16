@@ -15,11 +15,6 @@ output "public_subnet_ids" {
   value       = module.vpc.public_subnets
 }
 
-output "private_subnet_ids" {
-  description = "The identifiers of the two private subnets."
-  value       = module.vpc.private_subnets
-}
-
 output "cluster_name" {
   description = "The name of the EKS cluster."
   value       = module.eks.cluster_name
