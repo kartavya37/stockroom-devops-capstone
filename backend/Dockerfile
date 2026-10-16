@@ -11,6 +11,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Install the Debian security updates. The slim base image can be older
+# than the latest package fixes, and Trivy reports those packages.
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install the dependencies first. This layer stays in the cache.
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

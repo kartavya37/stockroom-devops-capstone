@@ -5,19 +5,22 @@
 # ---------------------------------------------------------------------------
 
 # ----------------------------------------------------------------- stage 1
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 
 WORKDIR /build
 
-COPY package.json ./
-RUN npm install
+COPY package.json package-lock.json ./
+RUN npm ci
 
 COPY index.html vite.config.js ./
 COPY src ./src
 RUN npm run build
 
 # ----------------------------------------------------------------- stage 2
-FROM nginx:1.27-alpine AS runtime
+FROM nginx:1.30-alpine AS runtime
+
+# Install the Alpine security updates (OpenSSL, c-ares, expat).
+RUN apk upgrade --no-cache
 
 # Remove the default configuration and add the project configuration.
 RUN rm -f /etc/nginx/conf.d/default.conf
