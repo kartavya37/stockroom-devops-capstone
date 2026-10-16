@@ -1,0 +1,44 @@
+# EXERCISE 3 — a readiness probe on the wrong path.
+#
+# The container operates, but the probe asks the path /healthcheck.
+# The backend has the path /health. The probe fails for each try.
+#
+#   kubectl apply -f troubleshooting/broken-probe.yaml
+#   kubectl get pods -n stockroom -l app=broken-probe
+#   kubectl describe pod -n stockroom -l app=broken-probe
+#
+# Expected state: the Pod is Running, but the READY column shows 0/1.
+# This is different from a crash. The container operates correctly.
+#
+# The correction: change the path to /health.
+#   kubectl delete -f troubleshooting/broken-probe.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: broken-probe
+  namespace: stockroom
+  labels:
+    app: broken-probe
+    exercise: "3"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: broken-probe
+  template:
+    metadata:
+      labels:
+        app: broken-probe
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              # ERROR: this path gives the code 404.
+              path: /healthcheck
+              port: 80
+            periodSeconds: 5
+            failureThreshold: 2

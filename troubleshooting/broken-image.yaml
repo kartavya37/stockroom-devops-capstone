@@ -1,0 +1,37 @@
+# EXERCISE 1 — a broken image reference.
+#
+# The image tag does not exist. Kubernetes cannot get the image.
+#
+#   kubectl apply -f troubleshooting/broken-image.yaml
+#   kubectl get pods -n stockroom
+#   kubectl describe pod -n stockroom -l app=broken-image
+#   kubectl get events -n stockroom --sort-by=.lastTimestamp
+#
+# Expected state: ImagePullBackOff or ErrImagePull.
+#
+# The correction: change the tag to a tag that exists. Then apply the file again.
+#   kubectl delete -f troubleshooting/broken-image.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: broken-image
+  namespace: stockroom
+  labels:
+    app: broken-image
+    exercise: "1"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: broken-image
+  template:
+    metadata:
+      labels:
+        app: broken-image
+    spec:
+      containers:
+        - name: backend
+          # This tag does not exist in the registry.
+          image: ghcr.io/kartavya37/stockroom-devops-capstone-backend:v9.9.9-does-not-exist
+          ports:
+            - containerPort: 8000
