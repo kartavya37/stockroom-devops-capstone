@@ -1,0 +1,37 @@
+# The production values. Use this file on the EKS cluster.
+#   helm upgrade --install stockroom ./helm/stockroom \
+#     -n stockroom --create-namespace -f helm/stockroom/values-prod.yaml
+
+backend:
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+frontend:
+  replicaCount: 3
+
+ingress:
+  enabled: true
+  className: nginx
+  host: stockroom.example.com
+
+hpa:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+serviceMonitor:
+  enabled: true
+
+postgres:
+  # Change this value to false and use Amazon RDS for real production.
+  enabled: true
+  persistence:
+    enabled: true
+    size: 20Gi

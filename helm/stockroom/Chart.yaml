@@ -1,0 +1,12 @@
+apiVersion: v2
+name: stockroom
+description: The Helm chart of the StockRoom stock control application.
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - stockroom
+  - inventory
+  - devops-capstone
+maintainers:
+  - name: kartavya37

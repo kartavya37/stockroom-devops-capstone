@@ -1,0 +1,32 @@
+# The development values. Use this file on Minikube, Kind or Docker Desktop.
+#   helm upgrade --install stockroom ./helm/stockroom \
+#     -n stockroom --create-namespace -f helm/stockroom/values-dev.yaml
+
+backend:
+  replicaCount: 2
+  image:
+    tag: latest
+
+frontend:
+  replicaCount: 2
+  image:
+    tag: latest
+
+ingress:
+  enabled: true
+  className: nginx
+  host: stockroom.local
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 50
+
+serviceMonitor:
+  enabled: true
+
+postgres:
+  persistence:
+    enabled: true
+    size: 1Gi
