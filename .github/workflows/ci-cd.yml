@@ -1,0 +1,205 @@
+# ---------------------------------------------------------------------------
+# StockRoom CI/CD pipeline
+#
+# Stage 1  TEST    pytest and the frontend build
+# Stage 2  BUILD   two images, a Trivy scan, then a push to GHCR
+# Stage 3  DEPLOY  Helm on the EKS cluster
+#
+# The image tag is the Git commit SHA. The tag "latest" is only an alias.
+# ---------------------------------------------------------------------------
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ghcr.io/${{ github.repository }}-backend
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository }}-frontend
+
+jobs:
+  # -------------------------------------------------------------- stage 1
+  test:
+    name: Test the application
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get the source code
+        uses: actions/checkout@v4
+
+      - name: Install Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install the Python dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run pytest
+        working-directory: backend
+        run: pytest -v
+
+      - name: Install Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package.json
+
+      - name: Install the frontend dependencies
+        working-directory: frontend
+        run: npm install
+
+      - name: Build the frontend
+        working-directory: frontend
+        run: npm run build
+
+  # -------------------------------------------------------------- stage 2
+  build:
+    name: Build, scan and push the images
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+
+    steps:
+      - name: Get the source code
+        uses: actions/checkout@v4
+
+      - name: Prepare Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # --- backend -------------------------------------------------------
+      - name: Build the backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          load: true
+          tags: ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+
+      - name: Scan the backend image with Trivy
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      # --- frontend ------------------------------------------------------
+      - name: Build the frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          load: true
+          tags: ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
+
+      - name: Scan the frontend image with Trivy
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      # --- push ----------------------------------------------------------
+      # The push happens only after the two scans pass.
+      - name: Push the backend image
+        run: |
+          docker tag "$BACKEND_IMAGE:$GITHUB_SHA" "$BACKEND_IMAGE:latest"
+          docker push "$BACKEND_IMAGE:$GITHUB_SHA"
+          docker push "$BACKEND_IMAGE:latest"
+
+      - name: Push the frontend image
+        run: |
+          docker tag "$FRONTEND_IMAGE:$GITHUB_SHA" "$FRONTEND_IMAGE:latest"
+          docker push "$FRONTEND_IMAGE:$GITHUB_SHA"
+          docker push "$FRONTEND_IMAGE:latest"
+
+      - name: Write the image report
+        run: |
+          {
+            echo "### Images for the commit \`${GITHUB_SHA::7}\`"
+            echo ""
+            echo "| Image | Tag |"
+            echo "|---|---|"
+            echo "| \`$BACKEND_IMAGE\` | \`$GITHUB_SHA\` |"
+            echo "| \`$FRONTEND_IMAGE\` | \`$GITHUB_SHA\` |"
+            echo ""
+            echo "Both images passed the Trivy scan for HIGH and CRITICAL CVEs."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # -------------------------------------------------------------- stage 3
+  deploy:
+    name: Deploy with Helm
+    runs-on: ubuntu-latest
+    needs: build
+    # The deployment starts only when the variable ENABLE_DEPLOY is "true".
+    # Make this variable after the EKS cluster is available.
+    # Go to: Settings > Secrets and variables > Actions > Variables.
+    if: vars.ENABLE_DEPLOY == 'true'
+
+    steps:
+      - name: Get the source code
+        uses: actions/checkout@v4
+
+      - name: Configure the AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION || 'ap-south-1' }}
+
+      - name: Configure kubectl for the EKS cluster
+        run: |
+          aws eks update-kubeconfig \
+            --region "${{ vars.AWS_REGION || 'ap-south-1' }}" \
+            --name "${{ vars.EKS_CLUSTER_NAME || 'stockroom-eks' }}"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.3
+
+      - name: Deploy the Helm chart
+        run: |
+          helm upgrade --install stockroom ./helm/stockroom \
+            --namespace stockroom \
+            --create-namespace \
+            --set backend.image.repository="$BACKEND_IMAGE" \
+            --set backend.image.tag="$GITHUB_SHA" \
+            --set frontend.image.repository="$FRONTEND_IMAGE" \
+            --set frontend.image.tag="$GITHUB_SHA" \
+            --wait \
+            --timeout 10m
+
+      - name: Show the result
+        run: |
+          kubectl get pods -n stockroom
+          kubectl get svc -n stockroom
+          kubectl get ingress -n stockroom
