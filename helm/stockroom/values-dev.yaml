@@ -16,12 +16,6 @@ ingress:
   className: nginx
   host: stockroom.local
 
-hpa:
-  enabled: true
-  minReplicas: 2
-  maxReplicas: 4
-  targetCPUUtilizationPercentage: 50
-
 serviceMonitor:
   enabled: true
 

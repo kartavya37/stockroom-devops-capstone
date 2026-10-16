@@ -22,9 +22,3 @@ StockRoom release {{ .Release.Name }} is installed in the namespace {{ .Release.
 
      kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "stockroom.fullname" . }}-backend 8000:{{ .Values.backend.service.port }}
      curl http://localhost:8000/metrics
-{{- if .Values.hpa.enabled }}
-
-4. Look at the autoscaler:
-
-     kubectl get hpa -n {{ .Release.Namespace }} --watch
-{{- end }}

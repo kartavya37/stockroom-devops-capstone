@@ -6,9 +6,7 @@ metadata:
     {{- include "stockroom.labels" . | nindent 4 }}
     app.kubernetes.io/component: backend
 spec:
-  {{- if not .Values.hpa.enabled }}
   replicas: {{ .Values.backend.replicaCount }}
-  {{- end }}
   selector:
     matchLabels:
       {{- include "stockroom.selectorLabels" (dict "root" . "component" "backend") | nindent 6 }}
