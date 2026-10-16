@@ -198,7 +198,8 @@ helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
 | GHCR packages with SHA tags (M5) | ![ghcr](screenshots/07-ghcr.png) |
 | Trivy scan output (M6) | ![trivy](screenshots/08-trivy.png) |
 | `terraform plan` (M7) | ![plan](screenshots/09-terraform-plan.png) |
-| AWS Console: VPC and EKS (M7) | ![aws](screenshots/10-aws-console.png) |
+| AWS Console: VPC and its two public subnets (M7) | ![aws-vpc](screenshots/10a-aws-vpc.png) |
+| AWS Console: EKS cluster and node group (M7) | ![aws-eks](screenshots/10b-aws-eks.png) |
 | `terraform destroy` complete (M7) | ![destroy](screenshots/11-terraform-destroy.png) |
 | `kubectl get pods` (M8) | ![pods](screenshots/12-pods.png) |
 | `kubectl get svc` (M8) | ![svc](screenshots/13-svc.png) |
