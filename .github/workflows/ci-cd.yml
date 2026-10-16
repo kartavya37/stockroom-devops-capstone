@@ -12,9 +12,6 @@ name: CI/CD
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
 
 # Only one run changes the Helm values at a time.
 concurrency:
@@ -97,7 +94,6 @@ jobs:
             "$FRONTEND_IMAGE:$GITHUB_SHA"
 
       - name: Log in to GHCR
-        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -105,30 +101,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push images
-        if: github.event_name != 'pull_request'
         run: |
           docker push "$BACKEND_IMAGE:$GITHUB_SHA"
           docker push "$FRONTEND_IMAGE:$GITHUB_SHA"
 
-      - name: Write run summary
-        if: github.event_name != 'pull_request'
-        run: |
-          {
-            echo "### Images for commit \`${GITHUB_SHA::7}\`"
-            echo ""
-            echo "| Image | Tag |"
-            echo "|---|---|"
-            echo "| \`$BACKEND_IMAGE\` | \`$GITHUB_SHA\` |"
-            echo "| \`$FRONTEND_IMAGE\` | \`$GITHUB_SHA\` |"
-            echo ""
-            echo "Both images passed Trivy (no fixable HIGH or CRITICAL CVE)."
-          } >> "$GITHUB_STEP_SUMMARY"
 
   # ------------------------------------------------------------------ 3
   gitops:
     name: Update Helm image tag for Argo CD
     needs: images
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: write
